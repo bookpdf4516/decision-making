@@ -3,3 +3,5 @@ pandas
 numpy
 matplotlib
 networkx
+gspread
+google-auth
