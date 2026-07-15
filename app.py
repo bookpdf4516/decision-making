@@ -217,6 +217,7 @@ def invia_email_risposta(row: dict, df_completo: pd.DataFrame):
 # via canale separato dal link. Modificare prima della somministrazione.
 CREDENZIALI = {
     "TL2026":  {"code": "P01", "ruolo": "Team Leader",     "ordine": ["T1","T2","T3"]},
+    "TL2026B":  {"code": "P01", "ruolo": "Team Leader",     "ordine": ["T1","T2","T3"]},    
     "SR2026A": {"code": "P02", "ruolo": "Analista Senior",  "ordine": ["T1","T2","T3"]},
     "SR2026B": {"code": "P03", "ruolo": "Analista Senior",  "ordine": ["T2","T3","T1"]},
     "SR2026C": {"code": "P04", "ruolo": "Analista Senior",  "ordine": ["T3","T1","T2"]},
