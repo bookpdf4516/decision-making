@@ -218,7 +218,7 @@ def invia_email_risposta(row: dict, df_completo: pd.DataFrame):
 CREDENZIALI = {
     "TL2026":  {"code": "P01", "ruolo": "Team Leader",     "ordine": ["T1","T2","T3"]},
     "TL2026B":  {"code": "P01", "ruolo": "Team Leader",     "ordine": ["T1","T2","T3"]},
-    "TL2026F":  {"code": "P01B", "ruolo": "Team Leader",     "ordine": ["T1","T2","T3"]},
+    "TL2026F":  {"code": "P01B", "ruolo": "Team Leader1",     "ordine": ["T1","T2","T3"]},
     "TL2026G":  {"code": "P01C", "ruolo": "Civile Leader",     "ordine": ["T1","T2","T3"]},
     "TL2026C":  {"code": "P01", "ruolo": "Team Leader",     "ordine": ["T1","T2","T3"]},
     "SR2026A": {"code": "P02", "ruolo": "Analista Senior",  "ordine": ["T1","T2","T3"]},
