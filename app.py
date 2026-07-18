@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import sqlite3
+import os
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -34,7 +35,8 @@ st.set_page_config(
 # CONFIGURAZIONE
 # ============================================================
 
-OUTPUT_DIR = Path(r"C:\Users\casti\OneDrive\Desktop\1_SOCIO_FISICA\questionario")
+LOCAL_OUTPUT_DIR = Path(r"C:\Users\casti\OneDrive\Desktop\1_SOCIO_FISICA\questionario")
+OUTPUT_DIR = LOCAL_OUTPUT_DIR if os.name == "nt" else Path.cwd() / "questionario_data"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 DB_PATH        = OUTPUT_DIR / "questionario_sistema3.sqlite"
@@ -59,7 +61,10 @@ VALID_CODES    = [f"P{i:02d}" for i in range(1, MAX_P + 1)]
 N_SYNTH_TEAMS  = 20    # repliche sintetiche — aumentare offline (max 100)
 N_MC           = 75    # run per replica — aumentare offline (max 1000)
 BASE_SEED      = 2026
-ADMIN_PWD      = "admin"
+try:
+    ADMIN_PWD = st.secrets["admin"]["password"]
+except Exception:
+    ADMIN_PWD = "S3-ADMIN-9Q7M"
 
 # ── GOOGLE SHEETS ────────────────────────────────────────────
 # Per attivare: inserire le credenziali del service account in
@@ -172,7 +177,10 @@ def invia_email_risposta(row: dict, df_completo: pd.DataFrame):
         )
 
         # Corpo email
-        n_completate = int(df_completo["completed"].fillna(0).astype(int).sum())
+        n_completate = (
+            int(df_completo["completed"].fillna(0).astype(int).sum())
+            if "completed" in df_completo.columns else 0
+        )
         codice = row.get("participant_code", "?")
         ruolo  = row.get("ruolo_assegnato", "?")
         ts     = row.get("timestamp", "?")
@@ -216,18 +224,18 @@ def invia_email_risposta(row: dict, df_completo: pd.DataFrame):
 # PIN assegnati dal ricercatore — comunicati ai partecipanti
 # via canale separato dal link. Modificare prima della somministrazione.
 CREDENZIALI = {
-    # Struttura ampliata: 3 figure di coordinamento + 8 analisti
-    "LT2028":  {"code": "P01", "ruolo": "Team Leader",          "ordine": ["T1","T2","T3"]},
-    "TL2026F": {"code": "P02", "ruolo": "Secondo Team Leader",  "ordine": ["T2","T3","T1"]},
-    "TL2026G": {"code": "P03", "ruolo": "Civile Leader",       "ordine": ["T3","T1","T2"]},
-    "SR2026A": {"code": "P04", "ruolo": "Analista Senior",     "ordine": ["T1","T2","T3"]},
-    "SR2026B": {"code": "P05", "ruolo": "Analista Senior",     "ordine": ["T2","T3","T1"]},
-    "SR2026C": {"code": "P06", "ruolo": "Analista Senior",     "ordine": ["T3","T1","T2"]},
-    "JR2026A": {"code": "P07", "ruolo": "Analista Junior",     "ordine": ["T1","T2","T3"]},
-    "JR2026B": {"code": "P08", "ruolo": "Analista Junior",     "ordine": ["T2","T3","T1"]},
-    "JR2026C": {"code": "P09", "ruolo": "Analista Junior",     "ordine": ["T3","T1","T2"]},
-    "CV2026A": {"code": "P10", "ruolo": "Analista Civile",     "ordine": ["T1","T2","T3"]},
-    "CV2026B": {"code": "P11", "ruolo": "Analista Civile",     "ordine": ["T2","T3","T1"]},
+    # PIN anonimi: non rivelano il ruolo del partecipante
+    "K7M4Q2": {"code": "P01", "ruolo": "Team Leader",         "ordine": ["T1","T2","T3"]},
+    "R9V2L6": {"code": "P02", "ruolo": "Secondo Team Leader", "ordine": ["T2","T3","T1"]},
+    "D4X8N3": {"code": "P03", "ruolo": "Civile Leader",       "ordine": ["T3","T1","T2"]},
+    "H6P3W9": {"code": "P04", "ruolo": "Analista Senior",     "ordine": ["T1","T2","T3"]},
+    "Z2F7C5": {"code": "P05", "ruolo": "Analista Senior",     "ordine": ["T2","T3","T1"]},
+    "B8T4J1": {"code": "P06", "ruolo": "Analista Senior",     "ordine": ["T3","T1","T2"]},
+    "N5Y9A3": {"code": "P07", "ruolo": "Analista Junior",     "ordine": ["T1","T2","T3"]},
+    "Q3G6S8": {"code": "P08", "ruolo": "Analista Junior",     "ordine": ["T2","T3","T1"]},
+    "M1K7E4": {"code": "P09", "ruolo": "Analista Junior",     "ordine": ["T3","T1","T2"]},
+    "V6C2R9": {"code": "P10", "ruolo": "Analista Civile",     "ordine": ["T1","T2","T3"]},
+    "F4N8U2": {"code": "P11", "ruolo": "Analista Civile",     "ordine": ["T2","T3","T1"]},
 }
 
 # Lookup derivato da CREDENZIALI — non modificare
@@ -710,7 +718,7 @@ def infer_roles(df):
     Tre livelli di fallback per garantire robustezza anche su Streamlit Cloud:
     1. Colonna ruolo_assegnato nel DB
     2. Lookup da RUOLI_FISSI per codice partecipante
-    3. Assegnazione posizionale che garantisce sempre 1 TL / 3 SR / 3 JR / 2 CV
+    3. Assegnazione posizionale coerente con il team ampliato a 11 agenti
     """
     df = df.copy()
 
@@ -940,9 +948,9 @@ def perturb_team(team, seed, noise=0.08):
 def run_montecarlo(team, n=N_MC, n_synth=N_SYNTH_TEAMS):
     """
     Monte Carlo esteso:
-    - n_synth repliche sintetiche del team empirico (default 100)
-    - n simulazioni per replica (default 1000)
-    - n * n_synth traiettorie totali (default 100.000)
+    - n_synth repliche sintetiche del team empirico
+    - n simulazioni per replica
+    - n * n_synth traiettorie totali
     Separa la variabilità stocastica del modello dalla variabilità
     dei profili cognitivi degli agenti.
     """
@@ -1476,15 +1484,15 @@ else:
 
 col1,col2,col3,col4 = st.columns(4)
 with col1:
-    if st.button("Genera 9 risposte random"):
+    if st.button(f"Genera {MAX_P} risposte random"):
         df = generate_random_dataset()
-        st.success("9 risposte generate.")
+        st.success(f"{MAX_P} risposte generate.")
         st.rerun()
 with col2:
     if st.button("Esegui analisi completa"):
         df = load_responses()
         if len(df) < MAX_P:
-            st.error("Servono 9 risposte complete.")
+            st.error(f"Servono {MAX_P} risposte complete.")
         else:
             with st.spinner("Calcolo in corso..."):
                 team, abm, mc, summary = run_full_pipeline(df)
