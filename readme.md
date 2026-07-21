@@ -7,4 +7,4 @@ a me
 
 Repository dedicato al progetto di simulazione decisionale basata su agenti (Agent-Based Model, ABM).
 
-Autore: Mauro Castiello
+Autore: MC
